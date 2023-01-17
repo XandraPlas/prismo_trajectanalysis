@@ -1,0 +1,21 @@
+options(digits=7)
+tmp <- res_step[[3]]$data$observed
+tmp <- OpenMx::mxGenerateData(res_step[[7]])
+names(tmp) <- paste0("scl.", 1:6)
+tmp2 <- reshape(tmp, direction = "long", varying = names(tmp))
+range(tmp2$scl)
+tmp2$scl2 <- scales::rescale(tmp2$scl, to = c(0,1))
+range(tmp2$scl2)
+tmp2$scl2 <- scales::rescale(tmp2$scl2, to = range(df_scores$boxcox))
+range(tmp2$scl2)
+tmp2$scl2 <- invbc(tmp2$scl2, lambda = out$lambda)
+range(tmp2$scl2)
+tmp2$scl2 <- round(tmp2$scl2)
+ggplot(tmp2, aes(x = scl2)) + geom_density() + facet_wrap(~ time)
+tmp3 <- reshape(tmp2[, c("id", "time", "scl2")], direction = "wide", timevar = "time", idvar = "id")
+tmp3[["id"]] <- NULL
+names(tmp3) <- paste0("scl.", 1:6)
+plas_depression <- tmp3
+setwd("c:/git_repositories/tidySEM")
+usethis::use_data(plas_depression, overwrite = T)
+saveRDS(plas_depression, "c:/tmp/plas_depression.RData")

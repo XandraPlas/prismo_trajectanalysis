@@ -1,0 +1,32 @@
+VERSION 1.1.0
+INPUT
+TITLE:
+ Your title goes here
+DATA:
+ FILE = "tmp.dat";
+VARIABLE:
+NAMES = SCL_A SCL_B SCL_C SCL_D SCL_E SCL_G;
+MISSING=.;
+INPUT_END
+2
+0
+0
+0
+ML
+1
+GENERAL
+0
+6
+0
+0
+scl_a scl_b scl_c scl_d scl_e scl_g
+1
+0 0 0 0 0 0
+0
+0
+5 1 scl_a    0.040    0.002
+5 1 scl_b    0.054    0.003
+5 1 scl_c    0.053    0.003
+5 1 scl_d    0.100    0.006
+5 1 scl_e    0.089    0.006
+5 1 scl_g    0.145    0.008

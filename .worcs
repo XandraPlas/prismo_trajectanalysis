@@ -1,0 +1,21 @@
+worcs_version: 0.1.10
+creator: vanlissa
+entry_point: manuscript/manuscript.Rmd
+data:
+  dat.csv:
+    save_expression: write.csv(x = data, file = filename, row.names = FALSE)
+    load_expression: read.csv(file = filename, stringsAsFactors = TRUE)
+    synthetic: synthetic_dat.csv
+    codebook: codebook_dat.Rmd
+    labels: value_labels_dat.yml
+  df.csv:
+    save_expression: write.csv(x = data, file = filename, row.names = FALSE)
+    load_expression: read.csv(file = filename, stringsAsFactors = TRUE)
+    synthetic: synthetic_df.csv
+    codebook: codebook_df.Rmd
+    labels: value_labels_df.yml
+checksums:
+  dat.csv: 61e02f97a06214a396bc6e621dd30001
+  synthetic_dat.csv: dfc52231fa946ce062822c6e3b1d28aa
+  df.csv: b3df90235ca61124ccc72857453e9921
+  synthetic_df.csv: e9cc1e9dcae7b795c07b500ada549d0d
