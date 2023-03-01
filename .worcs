@@ -1,6 +1,6 @@
 worcs_version: 0.1.10
 creator: vanlissa
-entry_point: manuscript/manuscript.Rmd
+entry_point: prismo_trajectanalysis
 data:
   dat.csv:
     save_expression: write.csv(x = data, file = filename, row.names = FALSE)
@@ -15,7 +15,7 @@ data:
     codebook: codebook_df.Rmd
     labels: value_labels_df.yml
 checksums:
-  dat.csv: 61e02f97a06214a396bc6e621dd30001
-  synthetic_dat.csv: dfc52231fa946ce062822c6e3b1d28aa
-  df.csv: b3df90235ca61124ccc72857453e9921
-  synthetic_df.csv: e9cc1e9dcae7b795c07b500ada549d0d
+  dat.csv: 4f34e1c3597749beb3cee02113c0f3de
+  synthetic_dat.csv: 335779f5cbf581d32d5d83679837b5d7
+  df.csv: e2d1995c0a062eae0f70cf9b8f440f55
+  synthetic_df.csv: 0ffdb79a8c1d549b3faaf7c39918842d

@@ -17,3 +17,5 @@ dat.csv
 df.csv
 !synthetic_df.csv
 !codebook_df.csv
+.DS_Store
+.Rapp.history

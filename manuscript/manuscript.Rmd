@@ -11,7 +11,7 @@ library("worcs")
 library(tidySEM)
 library(ggplot2)
 library(MASS)
-run_everything = FALSE
+run_everything = TRUE
 options(digits = 2)
 load_data()
 if(!file.exists("out.yml")){
@@ -135,14 +135,13 @@ Next, we estimated a latent class growth analysis
 for SCL.
 The model included an overall intercept, centered at T1.
 To model the potential effect of deployment on
-depresion,
+depression,
 we also included a dummy variable that was zero before
 deployment, and 1 after deployment.
 Finally, to model potential change (or recovery) in depression post-deployment,
-we included a linear slope from T2-T6.
+we included a linear and quadratic slope from T2-T6.
 All variances of growth parameters were fixed to zero due to the sparse nature of the data.
 
-**NOTE: You still have to change the time scales in this model; it currently assumes that all measurements are equidistant, but that's not true.**
 
 ```{r lcga, eval=run_everything}
 library(worcs)
@@ -156,6 +155,7 @@ if(run_everything){
 dat[["id"]] <- NULL
 names(dat) <- paste0("scl", 1:6)
 dat <- data.frame(dat)
+write.csv(dat, "lcga_dat_scl.csv", row.names = FALSE)
 
 # LCGA with step function for effect of deployment
 set.seed(67426)
@@ -177,7 +177,7 @@ s ~~ 0*s
 i ~~ 0*step
 i ~~ 0*s
 
-step ~~ 0*s", classes = 1:5,
+step ~~ 0*s", classes = 1:7,
   data = dat)
 saveRDS(res_step, paste0("res_step", Sys.Date(), ".RData"))
 
@@ -206,11 +206,11 @@ i ~~ 0*q
 step ~~ 0*s
 step ~~ 0*q
 
-s ~~ 0*q", classes = 1:5,
+s ~~ 0*q", classes = 1:7,
   data = dat)
 saveRDS(res_step_q, paste0("res_step_q", Sys.Date(), ".RData"))
 # In case of convergence problems in the first model:
-# res[[1]] <- mxTryHardWideSearch(res[[1]])
+# res_step_q[[4]] <- mxTryHardWideSearch(res_step_q[[4]], extraTries = 100)
 
 } else {
   f <- list.files(pattern = "res_step\\d.+RData$")
@@ -232,11 +232,13 @@ wald_tests <- tidySEM::wald_test(res_step[[3]],
                    "class1.M[1,7] = class2.M[1,7]&class1.M[1,7] = class3.M[1,7];class1.M[1,8] = class2.M[1,8]&class1.M[1,8] = class3.M[1,8];class1.M[1,9] = class2.M[1,9]&class1.M[1,9] = class3.M[1,9]")
 wald_tests$Hypothesis <- c("Mean i", "Mean step", "Mean slope")
 write.csv(tab_fit, "tab_fit_res_step.csv", row.names = FALSE)
-write.csv(tab_res, "tab_res_res_step_3.csv", row.names = FALSE)
+
 write.csv(wald_tests, "tab_wald_res_step_3.csv", row.names = FALSE)
 p <- tidySEM:::plot.tidy_fit(tab_fit, statistics = c("AIC", "BIC", "saBIC"))
 ggsave("plot_scree.svg", p, device = "svg", width = 210, height = 120, units = "mm")
+
 ```
+
 
 ## Class enumeration
 
@@ -250,8 +252,8 @@ To determine the correct number of classes, we considered the following criteria
 
 ```{r tabfit, results = "asis"}
 tab_fit <- read.csv("tab_fit_res_step.csv", stringsAsFactors = FALSE)
-tab_fit <- tab_fit[,c("Name", "Minus2LogLikelihood", "Parameters", "df", "AIC", "BIC", "saBIC", "Entropy", "prob_min", 
-"prob_max", "n_min", "n_max", "lmr_lr", "lmr_p")]
+# tab_fit <- tab_fit[,c("Name", "Minus2LogLikelihood", "Parameters", "df", "AIC", "BIC", "saBIC", "Entropy", "prob_min", 
+# "prob_max", "n_min", "n_max", "lmr_lr", "lmr_p")]
 knitr::kable(tab_fit, digits = 2, caption = "Fit of LCGA models")
 ```
 
@@ -306,15 +308,21 @@ knitr::kable(wald_tests, digits = 2, caption = "Wald tests")
 ## Trajectory plot
 
 ```{r makelcgaplot, eval = run_everything}
-p <- tidySEM::plot_growth(res_step[[3]], rawdata = TRUE, alpha_range = c(0, .05))
+p <- tidySEM::plot_growth(res_step[[2]], rawdata = TRUE, alpha_range = c(0, .05))
 brks <- seq(0, 1, length.out = 5)
 labs <- round(invbc(scales::rescale(brks, from = c(0, 1), to = out$rng_bc), lambda))
 p <- p + scale_y_continuous(breaks = seq(0, 1, length.out = 5), labels = labs) + ylab("SCL (rescaled from Box-Cox)")
 ggsave("lcga_trajectories.svg", p, device = "svg", width = 210, height = 120, units = "mm")
+
+p_q <- tidySEM::plot_growth(res_step_q[[2]], rawdata = TRUE, alpha_range = c(0, .05))
+p_q <- p_q + scale_y_continuous(breaks = seq(0, 1, length.out = 5), labels = labs) + ylab("SCL (rescaled from Box-Cox)")
+ggsave("lcga_trajectories_q.svg", p_q, device = "svg", width = 210, height = 120, units = "mm")
 ```
 
 ```{r plotlcga}
 knitr::include_graphics("lcga_trajectories.svg")
+
+knitr::include_graphics("lcga_trajectories_q.svg")
 ```
 
 Note that the observed individual trajectories show very high variability within classes.

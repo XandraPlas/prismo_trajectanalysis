@@ -5,6 +5,7 @@
 library(svglite)
 library(worcs)
 library(readxl)
+library(dplyr)
 library(tidySEM)
 library(ggplot2)
 library(lavaan)
@@ -12,8 +13,10 @@ library(missRanger)
 library(MASS)
 
 df <- read_excel("df_total.xlsx")
+df <- df %>%
+  filter(all_na_in_outcome_var == 0)
+
 df <- df[grepl("^.SCL\\d+$", names(df))]
 names(df) <- gsub("^(.).+?(\\d+)$", "SCL_\\1_\\2", names(df))
-df <- df[!grepl("SCL_F", names(df), fixed = T)]
 
 closed_data(df)

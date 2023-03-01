@@ -1,5 +1,5 @@
 ---
-title: "Codebook created on 2022-12-17 at 2022-12-17 17:42:30"
+title: "Codebook created on 2023-02-16 at 2023-02-16 14:50:07"
 output: github_document
 ---
 
@@ -16,7 +16,7 @@ The data contains 978 cases and 96 variables.
 ## Codebook
 
 ```{r}
-summaries <- read.csv("C:/git_repositories/prismo_trajectanalysis/codebook_df.csv", stringsAsFactors = FALSE)
+summaries <- read.csv("/Users/aplas2/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/codebook_df.csv", stringsAsFactors = FALSE)
 summaries <- summaries[, !colSums(is.na(summaries)) == nrow(summaries)]
 options(knitr.kable.NA = '')
 knitr::kable(summaries, row.names = FALSE, digits = 2)
