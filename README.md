@@ -16,14 +16,15 @@ prismo_trajectanalysis.Rproj | Project file                                     
 LICENSE                      | User permissions                                 | Read only     
 .worcs                       | WORCS metadata YAML                              | Read only     
 data_preparation.R           | Script to process raw data                       | Human editable
-manuscript/manuscript.rmd    | Source code for paper                            | Human editable
-manuscript/references.bib    | BibTex references for manuscript                 | Human editable
-renv.lock                    | Reproducible R environment                       | Read only 
 descriptives_demographics.R  | Script to assess demographics                    | Human editable
 fig_trajectories.R           | Script to customize figure                       | Human editable
 group_comparison.R           | Script to compare trajectories                   | Human editable
 measurement_invariance.R     | Script to analyze measurement invariance         | Human editable
 TrajAna_dataPrep_funcs.R     | Script with functions used for data preparation  | Human editable
+manuscript.rmd               | Source code for paper                            | Human editable
+references.bib               | BibTex references for manuscript                 | Human editable
+renv.lock                    | Reproducible R environment                       | Read only 
+
 
 
 <!--  You can consider adding the following to this file:                    -->
