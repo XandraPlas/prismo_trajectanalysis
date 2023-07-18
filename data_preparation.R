@@ -1,0 +1,457 @@
+#------------- SCRIPT FOR DATA PREPARATION - TRAJECTORY ANALYSIS --------------#
+#
+# Description:  This script reads the raw data (depression surveys: scl-90-r and
+#               bsi and demographics (incl deployment experience and PTSD 
+#               symptoms) of the sample) from excel sheets and replaces all 999 
+#               for NA. Furthermore, outliers and nan's will be removed.
+#
+# Authors:      Plas
+# Date:         March 2023
+# Version:      1.0
+# R.version:    4.2.2 (2022-10-31)
+# Rstudio:      2023.03.0+386
+#
+#------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------#
+#                          Settings & Dependencies
+#------------------------------------------------------------------------------#
+
+# Getting the path of your current open file
+current_path <- rstudioapi::getActiveDocumentContext()$path
+setwd(dirname(current_path))
+
+# Define path to save files
+save_location = "~/Documents/PhD/p_PRISMO/Trajectanalyse Depressie/prismo_trajectanalysis/"
+
+# Import libraries
+#--------------------------------#
+
+# read files
+library(readxl)
+library(writexl)
+
+# data manipulation
+library(tidyverse)
+library(tidyr)
+library(naniar)
+
+# visualizations
+library(ggplot2)
+
+# statistics
+library(e1071)
+
+# missing values
+library(mice)
+library(VIM)
+
+
+# Functions
+#--------------------------------#
+
+source("TrajAna_dataPrep_funcs.R")
+
+
+
+
+#------------------------------------------------------------------------------#
+#                          Data Collection
+#------------------------------------------------------------------------------#
+
+setwd("/Volumes/heronderzoek-8/MGGZ/Xandra/PRISMO data/")
+
+# Read the xlsx files
+#--------------------------------#
+
+# SCL-90-R
+df_scl90r_0 <- read_excel("Databestanden vragenlijsten compleet/SCL-90-R/PRISMO_SCL90R_ABCDEG.xlsx")
+scl90r_timepoints <- c("A", "B", "C", "D", "E", "G")
+
+# Depression data - CES-D
+df_cesd_0 <- read_excel("Databestanden vragenlijsten compleet/CES-D/PRISMO_CESD_DEFG.xlsx")
+cesd_timepoints <- c("D", "E", "F", "G")
+
+
+# Sample Demographics
+df_demo_0 <- read_excel("Databestanden vragenlijsten compleet/Demografie/PRISMO_Demografie_ABCDEF.xlsx")
+df_life_changes_0 <- read_excel("Databestanden vragenlijsten compleet/Checklist belangrijke gebeurtenissen/PRISMO_BelangrijkeGebeurtenissen_DEFG.xlsx")
+
+# Deployment experience (now DES)
+df_pes_0 <- read_excel("Databestanden vragenlijsten compleet/PES/PRISMO_PES_B.xlsx")
+
+# PTSD - ZIL(Dutch version of SRIP)
+df_zil_0 <- read_excel("Databestanden vragenlijsten compleet/ZIL/PRISMO_ZIL_ABCDEFG.xlsx")
+names(df_zil_0) <- gsub("^ZIL(\\d+)$", "AZIL\\1", names(df_zil_0)) # change col names to same format
+names(df_zil_0) <- gsub("G_ZIL(\\d+)$", "GZIL\\1", names(df_zil_0)) # change col names to same format
+zil_timepoints <- c("A", "B", "C", "D", "E", "F", "G")
+
+
+
+#------------------------------------------------------------------------------#
+#                      Data pre-processing & Exploration
+#------------------------------------------------------------------------------#
+
+
+# Replace 999 and outliers
+#--------------------------------#
+
+# replace 999 with NA and create back-up
+df_scl90r <- replace_999(df_scl90r_0)
+
+df_cesd <- replace_999(df_cesd_0)
+names(df_cesd) <- gsub("^(.).+?(\\d+)$", "\\1CESD\\2", names(df_cesd))
+
+df_demo <- replace_999(df_demo_0)
+df_life_changes <- replace_999(df_life_changes_0)
+
+df_pes <- replace_999(df_pes_0)
+
+df_zil <- replace_999(df_zil_0)
+
+
+
+# Prepare demographics
+#--------------------------------#
+
+df_demo <- df_demo %>%
+  rename(work_function = "function") %>%
+  
+  # transform categories
+  dplyr::mutate(age_cat = if_else(age <= 21, "<=21", ">21")) %>% 
+  dplyr::mutate(education_cat = if_else(education == 1, "Low", 
+                                 ifelse(education >= 5, "High", "Medium"))) %>% 
+  dplyr::mutate(rank_cat = if_else(rank == 1, "Private", 
+                            ifelse(rank == 2, "Corporal", 
+                                   ifelse(rank >= 5, "Staff officer", "Non-commissioned")))) %>% 
+  dplyr::mutate(yr_deployment_cat = if_else(yr_deployment <= 2006, "2005-2006", "2007-2008")) %>%
+  
+  # dplyr::select desired columns
+  dplyr::select("moederfile", "Niet_op_uitzending", "gender", "age_cat", "rank_cat", "education_cat", "work_function", "yr_deployment_cat", 
+         "Prev_deployment_dummy")
+
+
+
+
+
+# Prepare ZIL
+#--------------------------------#
+
+# impute missing values
+zil <- df_zil[grepl("^.ZIL\\d+$", names(df_zil))]
+names(zil) <- gsub("(.)ZIL(\\d+)$", "ZIL\\2_\\1", names(zil))
+set.seed(1234)
+df_zil_imp <- missRanger::missRanger(zil)
+df_zil_imp$moederfile <- df_zil$moederfile
+
+
+
+
+
+
+# Replace outliers
+#--------------------------------#
+
+## SCL-90-R
+check_outliers(df_scl90r, cut_off = 5) # check it outliers exist
+
+df_scl90r <- df_scl90r %>%
+  # replace values that exceed the questionnaire scale
+  mutate_at(vars(-"moederfile"), ~ replace(., . < 1, NA)) %>%
+  mutate_at(vars(-"moederfile"), ~ replace(., . == 11, 1)) %>%
+  mutate_at(vars(-"moederfile"), ~ replace(., . == 22, 2)) %>%
+  mutate_at(vars(-"moederfile"), ~ replace(., . == 33, 3)) %>%
+  mutate_at(vars(-"moederfile"), ~ replace(., . == 44, 4)) %>%
+  mutate_at(vars(-"moederfile"), ~ replace(., . == 55, 5)) %>%
+  mutate_at(vars(-"moederfile"), ~ replace(., . > 5, NA))
+
+check_outliers(df_scl90r, cut_off = 5) # check it outliers still exist
+
+
+
+# Correct inverse items
+#--------------------------------#
+
+## CES-D
+cesd_inverseItems <- c(4, 8, 12, 16)
+
+df_cesd <- df_cesd %>% 
+  # measurements on time point F are in 1-4 scale instead of 0-3
+  mutate_at(c(paste("FCESD", 1:20, sep = "")),
+            funs((.-1))) %>% 
+  # correct inverse items (4, 8, 12 and 16)
+  mutate_at(c('DCESD4','DCESD8','DCESD12','DCESD16',
+              'ECESD4','ECESD8','ECESD12','ECESD16',
+              'FCESD4','FCESD8','FCESD12','FCESD16',
+              'GCESD4','GCESD8','GCESD12','GCESD16'),
+            funs((.-3)*(-1)))
+
+# check outliers
+check_outliers(df_cesd, cut_off = 3) # check it outliers exist
+
+df_cesd <- df_cesd %>%
+  # replace values that exceed the questionnaire scale
+  mutate_at(vars(-"moederfile"), ~ replace(., . < 0, NA)) %>%
+  mutate_at(vars(-"moederfile"), ~ replace(., . == 11, 1)) %>%
+  mutate_at(vars(-"moederfile"), ~ replace(., . == 22, 2)) %>%
+  mutate_at(vars(-"moederfile"), ~ replace(., . == 33, 3)) %>%
+  mutate_at(vars(-"moederfile"), ~ replace(., . > 3, NA))
+
+check_outliers(df_cesd, cut_off = 5) # check it outliers still exist
+
+
+
+
+
+
+
+
+# Select depression scores
+#--------------------------------#
+
+## SCL-90-R
+scl90r_items_depr <- c("SCL3", "SCL5", "SCL14", "SCL15", "SCL19", "SCL20", 
+                       "SCL22", "SCL26", "SCL29", "SCL30", "SCL31", "SCL32", 
+                       "SCL51", "SCL54", "SCL59", "SCL79")
+
+df_scl90r_depr <- df_scl90r %>%
+  # dplyr::select all variables of the depression sub scale
+  dplyr::select("moederfile", ends_with(scl90r_items_depr))
+
+# calculate total score
+for (timepoint in scl90r_timepoints) {
+  # check time point
+  print(paste("Timepoint:", timepoint))
+
+  new_col_name <- paste(timepoint, "SCL90_depr", sep = "")
+  df_scl90r_depr <- calc_subScore_scl90r(df_scl90r_depr,
+                                         new_col = new_col_name,
+                                         max_na = 2,
+                                         subscale_items = scl90r_items_depr,
+                                         time_point = timepoint)
+}
+
+
+# save total scores 
+scl90r_scores <- df_scl90r_depr %>%
+  dplyr::select("moederfile", ends_with("_depr"))
+# create new col to see if participants missed all time points (A,B,C,D,E,G)
+scl90r_scores <- scl90r_scores %>%
+  column_to_rownames(., var = "moederfile") %>%
+  mutate(all_na_in_outcome_var := ifelse(rowSums(is.na(.)) == ncol(.), 1, 0)) # 1: missed all
+scl90r_scores$moederfile <- rownames(scl90r_scores) # recreate moederfile column
+
+# save item scores
+scl90r_items <- df_scl90r_depr %>%
+  dplyr::select("moederfile", !ends_with("_depr"))
+scl90r_items <- merge(scl90r_items, 
+                      scl90r_scores %>% dplyr::select("moederfile", "all_na_in_outcome_var"),
+                      by = "moederfile")
+
+
+
+
+
+## CES-D
+cesd_items <- paste("CESD", 1:20, sep="")
+
+# calculate total score
+for (timepoint in cesd_timepoints) {
+  # check time point
+  print(paste("Timepoint:", timepoint))
+  
+  new_col_name <- paste(timepoint, "CESD_depr", sep = "")
+  df_cesd <- calc_subScore_cesd(df_cesd,
+                                 new_col = new_col_name,
+                                 max_na = 2,
+                                 items = cesd_items,
+                                 time_point = timepoint)
+}
+
+
+# save total scores 
+cesd_scores <- df_cesd %>%
+  dplyr::select("moederfile", ends_with("_depr"))
+# create new col to see if participants missed all time points (A,B,C,D,E,G)
+cesd_scores <- cesd_scores %>%
+  column_to_rownames(., var = "moederfile") %>%
+  
+  mutate(all_na_in_cesd := ifelse(rowSums(is.na(.)) == ncol(.), 1, 0)) # 1: missed all
+cesd_scores$moederfile <- rownames(cesd_scores) # recreate moederfile column
+
+# save item scores
+cesd_items <- df_cesd %>%
+  dplyr::select("moederfile", !ends_with("_depr"))
+cesd_items <- merge(cesd_items, 
+                    cesd_scores %>% dplyr::select("moederfile", "all_na_in_cesd"),
+                    by = "moederfile")
+
+
+
+#------------------------------------------------------------------------------#
+#                                  Save Files
+#------------------------------------------------------------------------------#
+
+# Merge SCL-90 and CESD
+df_depr <- merge(scl90r_items, cesd_items, by = "moederfile")
+
+# combine depression data and demographics
+df_total_0 <- merge(df_demo, df_depr, by = "moederfile", all = TRUE)
+
+# merge df_demo with PES/DES scores
+df_total_0 <- merge(df_total_0, df_pes, by = "moederfile", all = TRUE)
+
+# merge df_demo with Life Changes
+df_total_0 <- merge(df_total_0, df_life_changes, by = "moederfile", all = TRUE)
+
+# merge df_demo with imputed ZIL scores
+df_total_ZILimp <- merge(df_total_0, df_zil_imp, by = "moederfile", all = TRUE)
+
+# keep deployed participants
+df_total_ZILimp <- df_total_ZILimp %>%
+  filter(Niet_op_uitzending == 0)
+
+write_xlsx(df_total_ZILimp, paste(save_location, "df_total.xlsx", sep = ""))
+
+
+# save file for demographics and descriptive table (including total scores)
+df_scores <- merge(scl90r_scores[, colnames(scl90r_scores)[colnames(scl90r_scores) != "all_na_in_outcome_var"]], 
+                                 cesd_scores[, colnames(cesd_scores)[colnames(cesd_scores) != "all_na_in_cesd"]], by = "moederfile")
+df_total_demographics <- merge(df_total_0, df_scores, by = "moederfile")
+
+# merge df_demo with non imputed ZIL scores
+df_total_demographics <- merge(df_total_demographics, df_zil, by = "moederfile", all = TRUE)
+
+# keep deployed participants
+df_total_demographics <- df_total_demographics %>%
+  filter(Niet_op_uitzending == 0)
+
+write_xlsx(df_total_demographics, paste(save_location, "df_total_demographics.xlsx", sep = ""))
+
+
+
+#------------------------------------------------------------------------------#
+#                           Explore Missing Values
+#------------------------------------------------------------------------------#
+
+
+# check distribution scl
+for (timepoint in scl90r_timepoints) {
+  y_col <- paste(timepoint, "SCL90_depr", sep = "")
+  
+  print(ggplot(scl90r_scores, aes_string(x=y_col)) +
+    geom_histogram())
+}
+# SKEWED! Zero inflated, group at minimum
+
+# check distribution cesd
+for (timepoint in cesd_timepoints) {
+  y_col <- paste(timepoint, "CESD_depr", sep = "")
+  
+  print(ggplot(cesd_scores, aes_string(x=y_col)) +
+          geom_histogram())
+}
+# SKEWED! Zero inflated, group at minimum
+
+# Missing values
+gg_miss_var(scl90r_scores)
+gg_miss_var(cesd_scores)
+
+
+
+# Patterns of missing values
+meanA_nan <- scl90r_scores %>%
+  bind_shadow() %>%
+  group_by(ASCL90_depr_NA) %>%
+  summarize(mean(BSCL90_depr, na.rm=TRUE), mean(CSCL90_depr, na.rm=TRUE),
+            mean(DSCL90_depr, na.rm=TRUE), mean(ESCL90_depr, na.rm=TRUE),
+            mean(GSCL90_depr, na.rm=TRUE))
+meanB_nan <- scl90r_scores %>%
+  bind_shadow() %>%
+  group_by(BSCL90_depr_NA) %>%
+  summarize(mean(ASCL90_depr, na.rm=TRUE), mean(CSCL90_depr, na.rm=TRUE),
+            mean(DSCL90_depr, na.rm=TRUE), mean(ESCL90_depr, na.rm=TRUE),
+            mean(GSCL90_depr, na.rm=TRUE))
+meanC_nan <- scl90r_scores %>%
+  bind_shadow() %>%
+  group_by(CSCL90_depr_NA) %>%
+  summarize(mean(ASCL90_depr, na.rm=TRUE), mean(BSCL90_depr, na.rm=TRUE),
+            mean(DSCL90_depr, na.rm=TRUE), mean(ESCL90_depr, na.rm=TRUE),
+            mean(GSCL90_depr, na.rm=TRUE))
+meanD_nan <- scl90r_scores %>%
+  bind_shadow() %>%
+  group_by(DSCL90_depr_NA) %>%
+  summarize(mean(ASCL90_depr, na.rm=TRUE), mean(BSCL90_depr, na.rm=TRUE),
+            mean(CSCL90_depr, na.rm=TRUE), mean(ESCL90_depr, na.rm=TRUE),
+            mean(GSCL90_depr, na.rm=TRUE))
+meanE_nan <- scl90r_scores %>%
+  bind_shadow() %>%
+  group_by(ESCL90_depr_NA) %>%
+  summarize(mean(ASCL90_depr, na.rm=TRUE), mean(BSCL90_depr, na.rm=TRUE),
+            mean(CSCL90_depr, na.rm=TRUE), mean(DSCL90_depr, na.rm=TRUE),
+            mean(GSCL90_depr, na.rm=TRUE))
+meanG_nan <- scl90r_scores %>%
+  bind_shadow() %>%
+  group_by(GSCL90_depr_NA) %>%
+  summarize(mean(ASCL90_depr, na.rm=TRUE), mean(BSCL90_depr, na.rm=TRUE),
+            mean(CSCL90_depr, na.rm=TRUE), mean(DSCL90_depr, na.rm=TRUE),
+            mean(ESCL90_depr, na.rm=TRUE))
+
+
+# looks like the NA group in G scores a little higher ±1 in D, E
+ 
+ 
+
+
+# Test NA/!NA differences
+#--------------------------------#
+# Does the NA group differ significantly from the !NA group?
+
+df_scl90r_shadow <- scl90r_scores %>%
+  bind_shadow()
+
+# not normally distributed so use Wilcoxon rank-sum Test
+
+wilcox.test(df_scl90r_shadow$DSCL90_depr ~ df_scl90r_shadow$GSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$ESCL90_depr ~ df_scl90r_shadow$GSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$CSCL90_depr ~ df_scl90r_shadow$GSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$BSCL90_depr ~ df_scl90r_shadow$GSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$ASCL90_depr ~ df_scl90r_shadow$GSCL90_depr_NA, paired = FALSE)
+# NA group of time point G scores significantly higher than !NA group on D
+
+wilcox.test(df_scl90r_shadow$GSCL90_depr ~ df_scl90r_shadow$ESCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$DSCL90_depr ~ df_scl90r_shadow$ESCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$CSCL90_depr ~ df_scl90r_shadow$ESCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$BSCL90_depr ~ df_scl90r_shadow$ESCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$ASCL90_depr ~ df_scl90r_shadow$ESCL90_depr_NA, paired = FALSE)
+# NA group of time point E scores significantly higher than !NA group on D
+
+wilcox.test(df_scl90r_shadow$GSCL90_depr ~ df_scl90r_shadow$DSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$ESCL90_depr ~ df_scl90r_shadow$DSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$CSCL90_depr ~ df_scl90r_shadow$DSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$BSCL90_depr ~ df_scl90r_shadow$DSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$ASCL90_depr ~ df_scl90r_shadow$DSCL90_depr_NA, paired = FALSE)
+# no difference for NA and !NA group of time point D
+
+wilcox.test(df_scl90r_shadow$GSCL90_depr ~ df_scl90r_shadow$CSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$ESCL90_depr ~ df_scl90r_shadow$CSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$DSCL90_depr ~ df_scl90r_shadow$CSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$BSCL90_depr ~ df_scl90r_shadow$CSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$ASCL90_depr ~ df_scl90r_shadow$CSCL90_depr_NA, paired = FALSE)
+# no difference for NA and !NA group of time point C
+
+wilcox.test(df_scl90r_shadow$GSCL90_depr ~ df_scl90r_shadow$BSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$ESCL90_depr ~ df_scl90r_shadow$BSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$DSCL90_depr ~ df_scl90r_shadow$BSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$CSCL90_depr ~ df_scl90r_shadow$BSCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$ASCL90_depr ~ df_scl90r_shadow$BSCL90_depr_NA, paired = FALSE)
+# no difference for NA and !NA group of time point B
+
+wilcox.test(df_scl90r_shadow$GSCL90_depr ~ df_scl90r_shadow$ASCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$ESCL90_depr ~ df_scl90r_shadow$ASCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$DSCL90_depr ~ df_scl90r_shadow$ASCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$CSCL90_depr ~ df_scl90r_shadow$ASCL90_depr_NA, paired = FALSE)
+wilcox.test(df_scl90r_shadow$BSCL90_depr ~ df_scl90r_shadow$ASCL90_depr_NA, paired = FALSE)
+# no difference for NA and !NA group of time point A

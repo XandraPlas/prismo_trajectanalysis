@@ -7,7 +7,7 @@
 #               SCL90R data on time point D, E, and G only. These two analysis
 #               can be compared.
 #
-# Authors:      Xandra Plas
+# Authors:      Plas
 # Date:         Feb 2023
 # Version:      1.0
 # R.version:    4.2.1 (2022-06-23)
@@ -20,7 +20,8 @@
 #                          Settings & Dependencies
 #------------------------------------------------------------------------------#
 
-
+# Define path to get and save files
+save_location = "~/Documents/PhD/p_PRISMO/Trajectanalyse Depressie/prismo_trajectanalysis/"
 
 
 
@@ -30,11 +31,11 @@
 #------------------------------------------------------------------------------#
 
 # read scl data and select time point D, E, and F
-dat_scl <- read.csv("lcga_dat_scl.csv", stringsAsFactors = FALSE)
+dat_scl <- read.csv(paste(save_location, "lcga_dat_scl.csv", sep = ""), stringsAsFactors = FALSE)
 dat_scl_DEG <- dat_scl[,4:6]
 
 # read total data and get cesd data
-df_total <- read_excel("~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/df_total.xlsx")
+df_total <- read_excel(paste(save_location, "df_total.xlsx", sep = ""))
 
 dat_cesd_DEFG <- df_total %>%
   filter(all_na_in_cesd == 0)
@@ -62,12 +63,12 @@ df_imp <- missRanger::missRanger(dat_cesd_DEFG)
 # add 1 for transformations
 df_imp <- df_imp + 1
 
-saveRDS(df_imp, "~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/df_imp_cesd.RData")
+saveRDS(df_imp, paste(save_location, "Extra/df_imp_cesd.RData", sep = ""))
 
 
 
 # Compute scale scores
-df_imp <- readRDS("~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/df_imp_cesd.RData")
+df_imp <- readRDS(paste(save_location, "Extra/df_imp_cesd.RData", sep = ""))
 df_cesd <- df_imp
 names(df_cesd) <- gsub("^CESD(\\d+)_(.)$", "CESD_\\2_\\1", names(df_cesd))
 #df_cesd[] <- lapply(df_cesd, function(i){as.integer(as.character(i))})
@@ -75,7 +76,7 @@ if(anyNA(df_cesd)) stop("Requires complete data")
 cesd <- tidy_sem(as.data.frame(df_cesd))
 cesd_scales <- create_scales(cesd, totals = TRUE)
 desc <- cesd_scales$descriptives
-write.csv(desc, "~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/scale_desc_cesd.csv", row.names = FALSE)
+write.csv(desc, paste(save_location, "Extra/scale_desc_cesd.csv", sep = ""), row.names = FALSE)
 
 
 
@@ -108,7 +109,7 @@ df_plot <- do.call(rbind, lapply(c("CESD", "log", "sqrt", "qrt", "boxcox"), func
              Transformation = n)
 }))
 p_trans <- ggplot(df_plot, aes(x = Value, colour = Transformation)) + geom_density() + facet_wrap(~time) + scale_y_sqrt() + xlab("CESD (rescaled to 0-1)")
-ggsave("~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/transformations_cesd.svg", p_trans, device = "svg", width = 210, height = 120, units = "mm")
+ggsave(paste(save_location, "Extra/transformations_cesd.svg", sep = ""), p_trans, device = "svg", width = 210, height = 120, units = "mm")
 
 
 
@@ -147,7 +148,7 @@ res1 <-
     auto.fix.first = FALSE,
     estimator ="WLSMV"
   )
-saveRDS(res1, "manuscript/res_cesd1.RData")
+saveRDS(res1, paste(save_location, "Extra/res_cesd1.RData", sep = ""))
 
 # Configural invariance model
 wavs <- LETTERS[4:7]
@@ -165,7 +166,7 @@ res2 <-
     auto.fix.first = FALSE,
     estimator ="WLSMV" 
   )
-saveRDS(res2, "manuscript/res_cesd2.RData")
+saveRDS(res2, paste(save_location, "Extra/res_cesd2.RData", sep = ""))
 
 # Metric invariance model
 mod3 <- paste0(sapply(wavs, function(w){
@@ -182,13 +183,13 @@ res3 <-
     auto.fix.first = FALSE,
     estimator ="WLSMV" 
   )
-saveRDS(res3, "manuscript/res_cesd3.RData")
+saveRDS(res3, paste(save_location, "Extra/res_cesd3.RData", sep = ""))
 
 tab <- table_fit(res1)[c("Name", "Parameters", "chisq", "df", "cfi", "tli", "rmsea", "srmr")]
 tab <- rbind(tab, table_fit(res2)[c("Name", "Parameters", "chisq", "df", "cfi", "tli", "rmsea", "srmr")])
 tab <- rbind(tab, table_fit(res3)[c("Name", "Parameters", "chisq", "df", "cfi", "tli", "rmsea", "srmr")])
 tab$Name <- c("CFA", "Configural", "Metric")
-write_xlsx(tab, "manuscript/measurement_invariance_cesd.xlsx")
+write_xlsx(tab, paste(save_location, "Extra/measurement_invariance_cesd.xlsx", sep = ""))
 
 
 #------------------------------------------------------------------------------#
@@ -214,7 +215,7 @@ i ~~ 0*s", classes = 1:5,
 n <- 1
 res_scl_DEG[[n]] <- mxTryHardWideSearch(res_scl_DEG[[n]], extraTries = 100)
 
-saveRDS(res_scl_DEG, paste0("~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/res_scl_DEG", Sys.Date(), ".RData"))
+saveRDS(res_scl_DEG, paste0(paste(save_location, "Extra/res_scl_DEG", sep = ""), Sys.Date(), ".RData"))
 
 
 
@@ -241,7 +242,7 @@ s ~~ 0*q", classes = 1:5,
 n <- 5
 res_scl_DEG_q[[n]] <- mxTryHardWideSearch(res_scl_DEG_q[[n]], extraTries = 200)
 
-saveRDS(res_scl_DEG_q, paste0("~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/res_scl_DEG_q", Sys.Date(), ".RData"))
+saveRDS(res_scl_DEG_q, paste0(paste(save_location, "Extra/res_scl_DEG_q", sep = ""), Sys.Date(), ".RData"))
 
 # table fit
 res <- c(res_scl_DEG, res_scl_DEG_q)
@@ -249,8 +250,8 @@ class(res) <- c("mixture_list", "list")
 names(res) <- c(paste0("linear", 1:length(res_scl_DEG)),
                 paste0("quadratic", 1:length(res_scl_DEG_q)))
 tab_fit <- table_fit(res)
-write.csv(tab_fit, "~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/tab_fit_res_sclDEG.csv", row.names = FALSE)
-write_xlsx(tab_fit, "~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/tab_fit_res_sclDEG.xlsx")
+write.csv(tab_fit, paste(save_location, "Extra/tab_fit_res_sclDEG.csv", sep = ""), row.names = FALSE)
+write_xlsx(tab_fit, paste(save_location, "Extra/tab_fit_res_sclDEG.xlsx", sep = ""))
 
 
 # plot
@@ -259,7 +260,7 @@ tidySEM::plot_growth(res_scl_DEG_q[[3]], rawdata = TRUE, alpha_range = c(0, .05)
 
 # scree plot
 p <- tidySEM:::plot.tidy_fit(tab_fit, statistics = c("AIC", "BIC", "saBIC"))
-ggsave("manuscript/plot_scree_sclDEG.svg", p, device = "svg", width = 210, height = 120, units = "mm")
+ggsave(paste(save_location, "Extra/plot_scree_sclDEG.svg", sep = ""), p, device = "svg", width = 210, height = 120, units = "mm")
 
 
 
@@ -284,7 +285,7 @@ i ~~ 0*s", classes = 1:5,
 n <- 1
 res_cesd[[n]] <- mxTryHardWideSearch(res_cesd[[n]], extraTries = 100)
 
-saveRDS(res_cesd, paste0("~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/res_cesd", Sys.Date(), ".RData"))
+saveRDS(res_cesd, paste0(paste(save_location, "Extra/res_cesd", sep = ""), Sys.Date(), ".RData"))
 
 
 # quadratic
@@ -310,7 +311,7 @@ s ~~ 0*q", classes = 1:5,
 n <- 2
 res_cesd_q[[n]] <- mxTryHardWideSearch(res_cesd_q[[n]], extraTries = 500)
 
-saveRDS(res_cesd_q, paste0("~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/res_cesd_q", Sys.Date(), ".RData"))
+saveRDS(res_cesd_q, paste0(paste(save_location, "Extra/res_cesd_q", sep = ""), Sys.Date(), ".RData"))
 
 
 
@@ -322,8 +323,8 @@ class(res_CESD) <- c("mixture_list", "list")
 names(res_CESD) <- c(paste0("linear", 1:length(res_cesd)),
                 paste0("quadratic", 1:length(res_cesd_q)))
 tab_fit_cesd <- table_fit(res_CESD)
-write.csv(tab_fit_CESD, "~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/tab_fit_res_cesd.csv", row.names = FALSE)
-write_xlsx(tab_fit_CESD, "~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/tab_fit_res_cesd.xlsx")
+write.csv(tab_fit_CESD, paste(save_location, "Extra/tab_fit_res_cesd.csv", sep = ""), row.names = FALSE)
+write_xlsx(tab_fit_CESD, paste(save_location, "Extra/tab_fit_res_cesd.xlsx", sep = ""))
 
 
 
@@ -331,7 +332,7 @@ write_xlsx(tab_fit_CESD, "~/Documents/PhD/Trajectanalyse Depressie/prismo_trajec
 
 # scree plot
 p <- tidySEM:::plot.tidy_fit(tab_fit_cesd, statistics = c("AIC", "BIC", "saBIC"))
-ggsave("manuscript/plot_scree_cesd.svg", p, device = "svg", width = 210, height = 120, units = "mm")
+ggsave(paste(save_location, "Extra/plot_scree_cesd.svg", sep = ""), p, device = "svg", width = 210, height = 120, units = "mm")
 
 
 # plot trajectories
@@ -339,11 +340,11 @@ p <- tidySEM::plot_growth(res_cesd[[3]], rawdata = TRUE, alpha_range = c(0, .05)
 brks <- seq(0, 1, length.out = 5)
 labs <- round(invbc(scales::rescale(brks, from = c(0, 1), to = rng_bc), lambda)) - 20
 p <- p + scale_y_continuous(breaks = seq(0, 1, length.out = 5), labels = labs) + ylab("CES-D (rescaled from Box-Cox)")
-ggsave("manuscript/lcga_trajectories_cesd.svg", p, device = "svg", width = 210, height = 120, units = "mm")
+ggsave(paste(save_location, "Extra/lcga_trajectories_cesd.svg", sep = ""), p, device = "svg", width = 210, height = 120, units = "mm")
 
 p_q <- tidySEM::plot_growth(res_cesd_q[[3]], rawdata = TRUE, alpha_range = c(0, .05))
 p_q <- p_q + scale_y_continuous(breaks = seq(0, 1, length.out = 5), labels = labs) + ylab("CES-D (rescaled from Box-Cox)")
-ggsave("manuscript/lcga_trajectories_cesd_q.svg", p_q, device = "svg", width = 210, height = 120, units = "mm")
+ggsave(paste(save_location, "Extra/lcga_trajectories_cesd_q.svg", sep = ""), p_q, device = "svg", width = 210, height = 120, units = "mm")
 
 
 
@@ -352,16 +353,16 @@ ggsave("manuscript/lcga_trajectories_cesd_q.svg", p_q, device = "svg", width = 2
 
 # parameters and waldtest
 tab_res <- table_results(res_cesd[[3]])
-write_xlsx(tab_res, "~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/tab_res_cesd.xlsx")
+write_xlsx(tab_res, paste(save_location, "Extra/tab_res_cesd.xlsx", sep = ""))
 
 tab_res_q <- table_results(res_cesd_q[[3]])
-write_xlsx(tab_res_q, "~/Documents/PhD/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/tab_res_cesd_q.xlsx")
+write_xlsx(tab_res_q, paste(save_location, "Extra/tab_res_cesd_q.xlsx", sep = ""))
 
 
 # wald_tests <- tidySEM::wald_test(res_cesd[[3]], 
 #                                  "class1.M[1,7] = class2.M[1,7]&class1.M[1,7] = class3.M[1,7];class1.M[1,8] = class2.M[1,8]&class1.M[1,8] = class3.M[1,8]")
 # wald_tests$Hypothesis <- c("Mean i", "Mean slope")
-# write.csv(wald_tests, "tab_wald_res_step_3.csv", row.names = FALSE)
+# write.csv(wald_tests, paste(save_location, "Extra/tab_wald_res_cesd_3.csv", sep = ""), row.names = FALSE)
 
 
 

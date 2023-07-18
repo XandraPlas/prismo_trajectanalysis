@@ -1,4 +1,4 @@
-df_imp <- readRDS("manuscript/df_imp.RData")
+df_imp <- readRDS("~/Documents/PhD/p_PRISMO/Trajectanalyse Depressie/prismo_trajectanalysis/manuscript/df_imp.RData")
 
 df_imp[] <- lapply(df_imp, function(i){
   ordered(round(i))
@@ -63,4 +63,4 @@ tab <- lapply(res_list, function(i)table_fit(i)[c("Name", "Parameters", "chisq",
 ])
 tab <- tidySEM:::bind_list(tab)
 tab$Name <- c("CFA", "Configural", "Metrix")
-write.csv(tab, "measurement_invariance.csv", row.names = FALSE)
+write.csv(tab, "~/Documents/PhD/p_PRISMO/Trajectanalyse Depressie/prismo_trajectanalysis/measurement_invariance.csv", row.names = FALSE)
