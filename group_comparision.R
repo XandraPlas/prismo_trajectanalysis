@@ -121,6 +121,50 @@ CrossTable(dat$class, dat$age_cat, fisher = TRUE, chisq = TRUE,
            expected = TRUE, sresid = TRUE, format = "SPSS")
 
 
+# Early life trauma
+#--------------------------------#
+df_early_trauma <- df_demo[grepl("^ETI", names(df_demo))]
+df_early_trauma$score <- rowSums(df_early_trauma, na.rm = TRUE)
+df_early_trauma$class <- cprobs$individual.predicted
+
+
+res_bch <- BCH(res_final_mod, data = as.integer(df_early_trauma$score))
+lr_test(res_bch) 
+
+fig_data <- df_early_trauma %>% group_by(class) %>%
+  summarise(meanScore = mean(as.integer(score)))
+fig_data$class_string <- c("Resilient", "Intermediate-stable", "Symptomatic-chronic", "Late-onset-increasing")
+fig_data$class_string <- factor(fig_data$class_string,                                  
+                           levels = c("Resilient", "Intermediate-stable", "Symptomatic-chronic", "Late-onset-increasing"))
+
+
+# Visualize with Barplot
+fig <- ggplot(fig_data, aes(y = meanScore, x = class_string)) +
+  geom_col_pattern(aes(fill = class_string, pattern = class_string, pattern_angle = class_string, pattern_spacing = class_string),
+                   pattern_density = 0.01, pattern_spacing = 0.01,
+                   pattern_fill    = 'white', pattern_colour  = 'white') +
+  theme_classic() + theme(axis.line.x = element_blank(), axis.ticks.x = element_blank()) +
+  ylab("Early traumas/individual") + xlab("Class") + 
+  scale_fill_manual(values=c("#7FC524","#e1700e", "#2494c5", "#0E4668")) +
+  scale_pattern_angle_manual(name="Class", values = c(30, 0, -30, 0)) +
+  scale_pattern_manual(values = c("Resilient" = "stripe", "Intermediate-stable" = "none", "Symptomatic-chronic" = "stripe", "Late-onset-increasing" = "none"),
+                       guide = "none") +
+  guides(fill = guide_legend(override.aes = list(pattern = c("stripe", "none", "stripe", "none")))) +
+  theme(legend.title = element_text(size=11),
+        legend.text = element_text(size=10)) +
+  labs(fill = "Class") 
+
+# add signifiance
+fig <- fig +
+  geom_signif(xmin = c(1, 1, 2, 2, 3.01), 
+              xmax = c(2, 2.99, 3, 4, 4),
+              y_position = c(4, 6.5, 5.6, 6.0, 6.5),  
+              annotation = c("**", "**", "**", "*", "**"))
+
+fig
+ggsave(paste(save_location, "manuscript/earlyTrauma_bar.svg", sep = ""), fig, device = "svg", width = 210, height = 120, units = "mm")
+
+
 # Deployment experience
 #--------------------------------#
 # deployment experience scale (DES(or PES))

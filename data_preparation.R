@@ -61,7 +61,7 @@ source("TrajAna_dataPrep_funcs.R")
 #                          Data Collection
 #------------------------------------------------------------------------------#
 
-setwd("/Volumes/heronderzoek-8/MGGZ/Xandra/PRISMO data/")
+setwd("/Volumes/heronderzoek-12/MGGZ/Xandra/PRISMO data/")
 
 # Read the xlsx files
 #--------------------------------#
@@ -75,9 +75,10 @@ df_cesd_0 <- read_excel("Databestanden vragenlijsten compleet/CES-D/PRISMO_CESD_
 cesd_timepoints <- c("D", "E", "F", "G")
 
 
-# Sample Demographics
+# Sample Demographics and life events
 df_demo_0 <- read_excel("Databestanden vragenlijsten compleet/Demografie/PRISMO_Demografie_ABCDEF.xlsx")
 df_life_changes_0 <- read_excel("Databestanden vragenlijsten compleet/Checklist belangrijke gebeurtenissen/PRISMO_BelangrijkeGebeurtenissen_DEFG.xlsx")
+df_early_trauma_0 <- read_excel("Databestanden vragenlijsten compleet/ETISR-SF/PRISMO_ETISRSF_A.xlsx")
 
 # Deployment experience (now DES)
 df_pes_0 <- read_excel("Databestanden vragenlijsten compleet/PES/PRISMO_PES_B.xlsx")
@@ -106,6 +107,7 @@ names(df_cesd) <- gsub("^(.).+?(\\d+)$", "\\1CESD\\2", names(df_cesd))
 
 df_demo <- replace_999(df_demo_0)
 df_life_changes <- replace_999(df_life_changes_0)
+df_early_trauma <- replace_999(df_early_trauma_0)
 
 df_pes <- replace_999(df_pes_0)
 
@@ -305,6 +307,9 @@ df_total_0 <- merge(df_total_0, df_pes, by = "moederfile", all = TRUE)
 
 # merge df_demo with Life Changes
 df_total_0 <- merge(df_total_0, df_life_changes, by = "moederfile", all = TRUE)
+
+# merge df_demo with Early Trauma
+df_total_0 <- merge(df_total_0, df_early_trauma, by = "moederfile", all = TRUE)
 
 # merge df_demo with imputed ZIL scores
 df_total_ZILimp <- merge(df_total_0, df_zil_imp, by = "moederfile", all = TRUE)

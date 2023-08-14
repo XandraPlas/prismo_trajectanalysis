@@ -157,11 +157,11 @@ line_plot <- line_plot + geom_line(data = predicted_trajectories, aes(x = .data[
 line_plot <- line_plot + theme_bw() +
   xlab("Time relative to deployment") +
   scale_color_manual(values=c("#7FC524","#e1700e", "#2494c5", "#0E4668"), name = "Class", 
-                     labels=c("Resilient", "Intermediate-stable", "Symptomatic-chronic", "late-onset-increasing")) +
+                     labels=c("Resilient (65%)", "Intermediate-stable (20%)", "Symptomatic-chronic (9%)", "late-onset-increasing (6%)")) +
   scale_linetype_manual(values=c("dashed", "solid", "dotdash", "longdash"), name = "Class", 
-                        labels=c("Resilient", "Intermediate-stable", "Symptomatic-chronic", "late-onset-increasing")) + 
+                        labels=c("Resilient (65%)", "Intermediate-stable (20%)", "Symptomatic-chronic (9%)", "late-onset-increasing (6%)")) + 
   scale_shape_manual(values=c(15, 16, 17, 18), name = "Class",
-                        labels=c("Resilient", "Intermediate-stable", "Symptomatic-chronic", "late-onset-increasing"))
+                        labels=c("Resilient (65%)", "Intermediate-stable (20%)", "Symptomatic-chronic (9%)", "late-onset-increasing (6%)"))
 
 
 # re-scale and change axis labels
@@ -170,14 +170,13 @@ p <- line_plot
 brks <- seq(0, 1, length.out = 5)
 labs <- round(invbc(scales::rescale(brks, from = c(0, 1), to = out$rng_bc), out$lambda))
 p <- p + scale_y_continuous(breaks = seq(0, 1, length.out = 5), labels = labs) 
-p <- p + ylab("SCL depression score")  +
+p <- p + ylab("SCL-90 depression score")  +
   scale_x_continuous(breaks = c(0, 2, 4, 8, 16, 32), labels=c("1" = "pre", "2" = "1m", "4" = "6m", "8" = "1y",
                                                               "15" = "2y", "30" = "10y"),
                      expand = c(0,0))
 
 p <- p + theme(legend.title = element_text(size=11),
                legend.text = element_text(size=10))
-
 p
 
 # save figure
