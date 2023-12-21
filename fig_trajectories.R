@@ -181,3 +181,20 @@ p
 
 # save figure
 ggsave(paste(save_location, "manuscript/plot_trajectories_paperCol.svg", sep = ""), p, device = "svg", width = 210, height = 120, units = "mm")
+ggsave(paste(save_location, "manuscript/plot_trajectories_paperCol.eps", sep = ""), p, device = "eps", width = 210, height = 120, units = "mm")
+
+
+# figure in grey scale
+p <- p + scale_color_manual(values=c("#000000", "#7b7d7b","#969696", "#bfbfbf"), name = "Class", 
+                     labels=c("Resilient (65%)", "Intermediate-stable (20%)", "Symptomatic-chronic (9%)", "late-onset-increasing (6%)"))
+ggsave(paste(save_location, "manuscript/plot_trajectories_greyScale.svg", sep = ""), p, device = "svg", width = 210, height = 120, units = "mm")
+ggsave(paste(save_location, "manuscript/plot_trajectories_greyScale.eps", sep = ""), p, device = "eps", width = 210, height = 120, units = "mm")
+
+
+
+
+
+
+
+
+

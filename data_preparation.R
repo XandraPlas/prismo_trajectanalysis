@@ -61,7 +61,7 @@ source("TrajAna_dataPrep_funcs.R")
 #                          Data Collection
 #------------------------------------------------------------------------------#
 
-setwd("/Volumes/heronderzoek-15/MGGZ/Xandra/PRISMO data/")
+setwd("/Volumes/heronderzoek-4/MGGZ/Xandra/PRISMO data/")
 
 # Read the xlsx files
 #--------------------------------#

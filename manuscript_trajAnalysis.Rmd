@@ -283,42 +283,46 @@ wald_tests$Hypothesis <- c("Mean i", "Mean step", "Mean slope")
 write.csv(wald_tests, paste(save_location, "manuscript/tab_wald_res_step_4.csv", sep = ""), row.names = FALSE)
 
 # pairwise comparison
+p_values <- list()
 wald_tests_12 <- tidySEM::wald_test(res_step[[4]], 
                    "class1.M[1,7] = class2.M[1,7];
                    class1.M[1,8] = class2.M[1,8];
                    class1.M[1,9] = class2.M[1,9]")
 wald_tests_12
-p.adjust(wald_tests_12$p, "bonferroni")
+p_values <- wald_tests_12$p
 wald_tests_13 <- tidySEM::wald_test(res_step[[4]], 
                    "class1.M[1,7] = class3.M[1,7];
                    class1.M[1,8] = class3.M[1,8];
                    class1.M[1,9] = class3.M[1,9]")
 wald_tests_13
-p.adjust(wald_tests_13$p, "bonferroni")
+p_values <- append(p_values, wald_tests_13$p)
 wald_tests_14 <- tidySEM::wald_test(res_step[[4]], 
                    "class1.M[1,7] = class4.M[1,7];
                    class1.M[1,8] = class4.M[1,8];
                    class1.M[1,9] = class4.M[1,9]")
 wald_tests_14
-round(p.adjust(wald_tests_14$p, "bonferroni"), 3)
+p_values <- append(p_values, wald_tests_14$p)
 wald_tests_23 <- tidySEM::wald_test(res_step[[4]], 
                    "class2.M[1,7] = class3.M[1,7];
                    class2.M[1,8] = class3.M[1,8];
                    class2.M[1,9] = class3.M[1,9]")
 wald_tests_23
-round(p.adjust(wald_tests_23$p, "bonferroni"), 3)
+p_values <- append(p_values, wald_tests_23$p)
 wald_tests_24 <- tidySEM::wald_test(res_step[[4]], 
                    "class2.M[1,7] = class4.M[1,7];
                    class2.M[1,8] = class4.M[1,8];
                    class2.M[1,9] = class4.M[1,9]")
 wald_tests_24
-round(p.adjust(wald_tests_24$p, "bonferroni"), 3)
+p_values <- append(p_values, wald_tests_24$p)
 wald_tests_34 <- tidySEM::wald_test(res_step[[4]], 
                    "class3.M[1,7] = class4.M[1,7];
                    class3.M[1,8] = class4.M[1,8];
                    class3.M[1,9] = class4.M[1,9]")
 wald_tests_34
-round(p.adjust(wald_tests_34$p, "bonferroni"), 3)
+p_values <- append(p_values, wald_tests_34$p)
+df_p_values <- round(data.frame(unlist(p_values)), 3)
+df_p_values$p_adjusted <- round(p.adjust(df_p_values[,1], "fdr"), 3)
+
 
 ```
 

@@ -339,10 +339,6 @@
 <rect x='340.54' y='69.74' width='29.57' height='224.91' style='stroke-width: 1.07; stroke: none; stroke-linecap: square; stroke-linejoin: miter;' />
 <rect x='370.11' y='60.56' width='29.57' height='234.09' style='stroke-width: 1.07; stroke: none; stroke-linecap: square; stroke-linejoin: miter;' />
 <rect x='399.69' y='37.61' width='29.57' height='257.04' style='stroke-width: 1.07; stroke: none; stroke-linecap: square; stroke-linejoin: miter;' />
-<text x='92.45' y='140.15' text-anchor='middle' style='font-size: 11.04px; font-family: "Arial";' textLength='4.29px' lengthAdjust='spacingAndGlyphs'>*</text>
-<line x1='61.23' y1='147.86' x2='61.23' y2='143.18' style='stroke-width: 1.07;' />
-<line x1='61.23' y1='143.18' x2='123.66' y2='143.18' style='stroke-width: 1.07;' />
-<line x1='123.66' y1='143.18' x2='123.66' y2='147.86' style='stroke-width: 1.07;' />
 <text x='207.46' y='140.15' text-anchor='middle' style='font-size: 11.04px; font-family: "Arial";' textLength='8.58px' lengthAdjust='spacingAndGlyphs'>**</text>
 <line x1='192.67' y1='147.86' x2='192.67' y2='143.18' style='stroke-width: 1.07;' />
 <line x1='192.67' y1='143.18' x2='222.24' y2='143.18' style='stroke-width: 1.07;' />
