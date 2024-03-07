@@ -19,9 +19,9 @@
 #                          Settings & Dependencies
 #------------------------------------------------------------------------------#
 
-# Getting the path of your current open file
-current_path <- rstudioapi::getActiveDocumentContext()$path
-setwd(dirname(current_path))
+# # Getting the path of your current open file
+# current_path <- rstudioapi::getActiveDocumentContext()$path
+# setwd(dirname(current_path))
 
 # Define path to save files
 save_location = "~/Documents/PhD/p_PRISMO/Trajectanalyse Depressie/prismo_trajectanalysis/"
@@ -51,8 +51,7 @@ library(VIM)
 
 # Functions
 #--------------------------------#
-
-source("TrajAna_dataPrep_funcs.R")
+source("~/Documents/PhD/p_PRISMO/Trajectanalyse Depressie/prismo_trajectanalysis/TrajAna_dataPrep_funcs.R")
 
 
 
@@ -61,7 +60,7 @@ source("TrajAna_dataPrep_funcs.R")
 #                          Data Collection
 #------------------------------------------------------------------------------#
 
-setwd("/Volumes/heronderzoek-4/MGGZ/Xandra/PRISMO data/")
+setwd("/Volumes/heronderzoek-18/MGGZ/Xandra/PRISMO data/")
 
 # Read the xlsx files
 #--------------------------------#
@@ -69,10 +68,6 @@ setwd("/Volumes/heronderzoek-4/MGGZ/Xandra/PRISMO data/")
 # SCL-90-R
 df_scl90r_0 <- read_excel("Databestanden vragenlijsten compleet/SCL-90-R/PRISMO_SCL90R_ABCDEG.xlsx")
 scl90r_timepoints <- c("A", "B", "C", "D", "E", "G")
-
-# Depression data - CES-D
-df_cesd_0 <- read_excel("Databestanden vragenlijsten compleet/CES-D/PRISMO_CESD_DEFG.xlsx")
-cesd_timepoints <- c("D", "E", "F", "G")
 
 
 # Sample Demographics and life events
@@ -102,9 +97,6 @@ zil_timepoints <- c("A", "B", "C", "D", "E", "F", "G")
 # replace 999 with NA and create back-up
 df_scl90r <- replace_999(df_scl90r_0)
 
-df_cesd <- replace_999(df_cesd_0)
-names(df_cesd) <- gsub("^(.).+?(\\d+)$", "\\1CESD\\2", names(df_cesd))
-
 df_demo <- replace_999(df_demo_0)
 df_life_changes <- replace_999(df_life_changes_0)
 df_early_trauma <- replace_999(df_early_trauma_0)
@@ -131,7 +123,7 @@ df_demo <- df_demo %>%
   dplyr::mutate(yr_deployment_cat = if_else(yr_deployment <= 2006, "2005-2006", "2007-2008")) %>%
   
   # dplyr::select desired columns
-  dplyr::select("moederfile", "Niet_op_uitzending", "gender", "age_cat", "rank_cat", "education_cat", "work_function", "yr_deployment_cat", 
+  dplyr::select("moederfile", "Niet_op_uitzending", "gender", "age", "age_cat", "rank_cat", "education_cat", "work_function", "yr_deployment_cat", 
          "Prev_deployment_dummy")
 
 
@@ -156,7 +148,7 @@ df_zil_imp$moederfile <- df_zil$moederfile
 # Replace outliers
 #--------------------------------#
 
-## SCL-90-R
+## SCL-90
 check_outliers(df_scl90r, cut_off = 5) # check it outliers exist
 
 df_scl90r <- df_scl90r %>%
@@ -170,41 +162,6 @@ df_scl90r <- df_scl90r %>%
   mutate_at(vars(-"moederfile"), ~ replace(., . > 5, NA))
 
 check_outliers(df_scl90r, cut_off = 5) # check it outliers still exist
-
-
-
-# Correct inverse items
-#--------------------------------#
-
-## CES-D
-cesd_inverseItems <- c(4, 8, 12, 16)
-
-df_cesd <- df_cesd %>% 
-  # measurements on time point F are in 1-4 scale instead of 0-3
-  mutate_at(c(paste("FCESD", 1:20, sep = "")),
-            funs((.-1))) %>% 
-  # correct inverse items (4, 8, 12 and 16)
-  mutate_at(c('DCESD4','DCESD8','DCESD12','DCESD16',
-              'ECESD4','ECESD8','ECESD12','ECESD16',
-              'FCESD4','FCESD8','FCESD12','FCESD16',
-              'GCESD4','GCESD8','GCESD12','GCESD16'),
-            funs((.-3)*(-1)))
-
-# check outliers
-check_outliers(df_cesd, cut_off = 3) # check it outliers exist
-
-df_cesd <- df_cesd %>%
-  # replace values that exceed the questionnaire scale
-  mutate_at(vars(-"moederfile"), ~ replace(., . < 0, NA)) %>%
-  mutate_at(vars(-"moederfile"), ~ replace(., . == 11, 1)) %>%
-  mutate_at(vars(-"moederfile"), ~ replace(., . == 22, 2)) %>%
-  mutate_at(vars(-"moederfile"), ~ replace(., . == 33, 3)) %>%
-  mutate_at(vars(-"moederfile"), ~ replace(., . > 3, NA))
-
-check_outliers(df_cesd, cut_off = 5) # check it outliers still exist
-
-
-
 
 
 
@@ -255,52 +212,12 @@ scl90r_items <- merge(scl90r_items,
 
 
 
-
-## CES-D
-cesd_items <- paste("CESD", 1:20, sep="")
-
-# calculate total score
-for (timepoint in cesd_timepoints) {
-  # check time point
-  print(paste("Timepoint:", timepoint))
-  
-  new_col_name <- paste(timepoint, "CESD_depr", sep = "")
-  df_cesd <- calc_subScore_cesd(df_cesd,
-                                 new_col = new_col_name,
-                                 max_na = 2,
-                                 items = cesd_items,
-                                 time_point = timepoint)
-}
-
-
-# save total scores 
-cesd_scores <- df_cesd %>%
-  dplyr::select("moederfile", ends_with("_depr"))
-# create new col to see if participants missed all time points (A,B,C,D,E,G)
-cesd_scores <- cesd_scores %>%
-  column_to_rownames(., var = "moederfile") %>%
-  
-  mutate(all_na_in_cesd := ifelse(rowSums(is.na(.)) == ncol(.), 1, 0)) # 1: missed all
-cesd_scores$moederfile <- rownames(cesd_scores) # recreate moederfile column
-
-# save item scores
-cesd_items <- df_cesd %>%
-  dplyr::select("moederfile", !ends_with("_depr"))
-cesd_items <- merge(cesd_items, 
-                    cesd_scores %>% dplyr::select("moederfile", "all_na_in_cesd"),
-                    by = "moederfile")
-
-
-
 #------------------------------------------------------------------------------#
 #                                  Save Files
 #------------------------------------------------------------------------------#
 
-# Merge SCL-90 and CESD
-df_depr <- merge(scl90r_items, cesd_items, by = "moederfile")
-
 # combine depression data and demographics
-df_total_0 <- merge(df_demo, df_depr, by = "moederfile", all = TRUE)
+df_total_0 <- merge(df_demo, scl90r_items, by = "moederfile", all = TRUE)
 
 # merge df_demo with PES/DES scores
 df_total_0 <- merge(df_total_0, df_pes, by = "moederfile", all = TRUE)
@@ -322,8 +239,7 @@ write_xlsx(df_total_ZILimp, paste(save_location, "df_total.xlsx", sep = ""))
 
 
 # save file for demographics and descriptive table (including total scores)
-df_scores <- merge(scl90r_scores[, colnames(scl90r_scores)[colnames(scl90r_scores) != "all_na_in_outcome_var"]], 
-                                 cesd_scores[, colnames(cesd_scores)[colnames(cesd_scores) != "all_na_in_cesd"]], by = "moederfile")
+df_scores <- scl90r_scores
 df_total_demographics <- merge(df_total_0, df_scores, by = "moederfile")
 
 # merge df_demo with non imputed ZIL scores
@@ -351,18 +267,9 @@ for (timepoint in scl90r_timepoints) {
 }
 # SKEWED! Zero inflated, group at minimum
 
-# check distribution cesd
-for (timepoint in cesd_timepoints) {
-  y_col <- paste(timepoint, "CESD_depr", sep = "")
-  
-  print(ggplot(cesd_scores, aes_string(x=y_col)) +
-          geom_histogram())
-}
-# SKEWED! Zero inflated, group at minimum
-
 # Missing values
 gg_miss_var(scl90r_scores)
-gg_miss_var(cesd_scores)
+
 
 
 

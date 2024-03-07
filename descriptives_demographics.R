@@ -88,7 +88,7 @@ df_total$PESscore <- df_pes$sum
 # calculate ZIL and DES scores for na and non-na group
 # get variables
 df_demo <- df_total %>%
-  dplyr::select("all_na_in_outcome_var", "ZIL_A", "PESscore")
+  dplyr::select("all_na_in_outcome_var.x", "ZIL_A", "PESscore")
 
 
 tapply(df_demo$ZIL_A, df_demo$all_na_in_outcome_var, summary)
@@ -99,10 +99,10 @@ tapply(df_demo$PESscore, df_demo$all_na_in_outcome_var, summary)
 # get variables
 df_demo_table <- df_total %>%
   dplyr::select("gender", "age_cat", "rank_cat", "education_cat", "work_function", "yr_deployment_cat", 
-         "Prev_deployment_dummy", "all_na_in_outcome_var")
+         "Prev_deployment_dummy", "all_na_in_outcome_var.x")
 
 
-demo_table <- create_demoTable(df = df_demo_table, split_variable = "all_na_in_outcome_var")
+demo_table <- create_demoTable(df = df_demo_table, split_variable = "all_na_in_outcome_var.x")
 demo_table <- cbind(rownames(demo_table), demo_table)
 write_xlsx(demo_table, paste(save_location, "demographics_table.xlsx", sep = ""))
 
@@ -115,8 +115,14 @@ for (var in c("gender", "age_cat", "rank_cat", "education_cat", "work_function",
 }
 
 
-
-
+# age as continuous
+# perform the Mann Whitney U test
+wilcox.test(age ~ all_na_in_outcome_var.x, data = df_total)
+df_total %>%
+  select(all_na_in_outcome_var.x, age) %>%
+  group_by(all_na_in_outcome_var.x) %>%
+  summarise(mean_age = mean(age, na.rm = TRUE),
+            sd_age = sd(age, na.rm = TRUE))
 
 
 #------------------------------------------------------------------------------#

@@ -84,15 +84,19 @@ set.seed(1234)
 
 # Select variables
 df_demo <- df_total %>%
-  dplyr::select("gender", "age_cat", "rank_cat", "education_cat", "work_function", "yr_deployment_cat", "Prev_deployment_dummy", "class")
+  dplyr::select("gender", "age", "rank_cat", "education_cat", "work_function", "yr_deployment_cat", "Prev_deployment_dummy", "class")
 df_demo$education_cat[df_demo$education_cat == 7] <- NA
 
 p_values <- list()
 ll_dif <- list()
-demographics <- c("gender", "age_cat", "rank_cat", "education_cat", "work_function", "yr_deployment_cat", "Prev_deployment_dummy")
+demographics <- c("gender", "age", "rank_cat", "education_cat", "work_function", "yr_deployment_cat", "Prev_deployment_dummy")
 
 for (demo in demographics){
-  res_bch <- BCH(res_final_mod, data = as.factor(df_demo[[demo]]))
+  if (demo == "age"){
+    res_bch <- BCH(res_final_mod, data = df_demo[[demo]])
+  } else {
+    res_bch <- BCH(res_final_mod, data = as.factor(df_demo[[demo]]))
+  }
   res <- lr_test(res_bch)
   
   new_col_p <- paste("p_", demo, sep = "")
@@ -130,7 +134,6 @@ res_bch <- BCH(res_final_mod, data = as.integer(df_pes$sum))
 res <- lr_test(res_bch) 
 df_p_values["p_pes"] <- res[["overall"]][["p"]]
 ll_dif <- append(ll_dif, res[["overall"]][["LL_dif"]])
-
 
 
 
@@ -201,6 +204,18 @@ for (timepoint in c("D", "E", "FG")){
   df_p_values[new_col_p] <- res[["overall"]][["p"]]
   ll_dif <- append(ll_dif, res[["overall"]][["LL_dif"]])
 }
+
+
+
+# ACTIVE DUTY
+#----------------------------------------------------------------------------------------#
+df_interview <- read_excel("/Volumes/heronderzoek-18/Groep Geuze/15-705_PRISMO/E_ResearchData/2_ResearchData/1. PRISMO algemeen/Questionnaire data files/10-jaars interview/PRISMO_interview_G.xlsx")
+df_total <- merge(df_total, df_interview[, c("moederfile", "G_Defensie")], on='moederfile', how='inner')
+
+res_bch <- BCH(res_final_mod, data = as.factor(df_total$G_Defensie))
+res <- lr_test(res_bch) 
+df_p_values["p_active_duty"] <- res[["overall"]][["p"]]
+ll_dif <- append(ll_dif, res[["overall"]][["LL_dif"]])
 
 
 # adjust p_values for multiple comparison
@@ -441,6 +456,9 @@ ggsave(paste(save_location, "manuscript/ZIL_perClass_line_greyScale.eps", sep = 
 
 
 
+
+
+
 # LIFE EVENTS
 #----------------------------------------------------------------------------------------#
 # life events were significant at D, E and FG (p < 0.001)
@@ -597,6 +615,10 @@ df_percentage_FG <- t(round(df_percentage_FG, 0))
 
 
 
+
+
+# SUPPLEMENTARY MATERIALS: RELATION DEPRESSION TRAJECTORIES, DEPLOYMENT STRESSORS AND PTSD
+#-------------------------------------------------------------------------------------------#
 
 
 
